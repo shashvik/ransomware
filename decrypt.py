@@ -81,14 +81,61 @@ def load_private_key():
         )
     return private_key
 
+def server_load_private_key(file_path):
+    with open(file_path, 'rb') as key_file:
+        pem_data = key_file.read()
+    return serialization.load_pem_private_key(pem_data, password=None, backend=default_backend())
+
+def server_decrypt_file(enc_file_path, private_key):
+    with open(enc_file_path, 'rb') as enc_file:
+        encrypted_key = enc_file.read(256)  # Assuming 2048-bit RSA key
+        iv = enc_file.read(16)
+        ciphertext = enc_file.read()
+
+    # Decrypt the AES key with RSA
+    aes_key = private_key.decrypt(
+        encrypted_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    # Decrypt the file with AES
+    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+
+    decrypted_plaintext = decryptor.update(ciphertext) + decryptor.finalize()
+
+    # Remove padding
+    padding_length = decrypted_plaintext[-1]
+    decrypted_plaintext = decrypted_plaintext[:-padding_length]
+
+    return decrypted_plaintext
+
 def main():
     directory = '.'  # Directory to scan and decrypt all files (current directory by default)
 
+    # step 0:
+    # Load the private key from 'server_private_key.pem'
+    server_private_key = server_load_private_key('server_private_key.pem')
+
+    # Decrypt the file
+    decrypted_data = server_decrypt_file('private_key_encrypted.bin', server_private_key)
+
+    # Save the decrypted data to 'client_private_key.pem'
+    with open('client_private_key.pem', 'wb') as f:
+        f.write(decrypted_data)
+
+    print("Decrypted data saved to 'client_private_key.pem'")
     # Step 1: Load RSA private key
     private_key = load_private_key()
 
     # Step 2: Decrypt all files in the directory with .shashank extension
     decrypt_all_files_in_directory(directory, private_key)
+
+    
 
 if __name__ == "__main__":
     main()
