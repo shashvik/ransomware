@@ -1,4 +1,4 @@
-# A very simple ansomware built on python.
+# A very simple Ransomware built on python.
 
 How to run this:
 Copy the logrotate.sh file and just execute it on a system, it will encrypt the files.
