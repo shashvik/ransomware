@@ -11,3 +11,5 @@ Copy the logrotate.sh file and just execute it on a system, it will encrypt the 
 
 How to decrypt?
 copy the server_private_key.pem on to the folder and run the decrypt.py python code it will decrypt it
+
+Article: https://medium.com/@shashvik/coding-criminality-my-experience-in-ransomware-development-55f7d61c06b4
