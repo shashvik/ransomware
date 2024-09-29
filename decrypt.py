@@ -125,10 +125,10 @@ def main():
     decrypted_data = server_decrypt_file('private_key_encrypted.bin', server_private_key)
 
     # Save the decrypted data to 'client_private_key.pem'
-    with open('client_private_key.pem', 'wb') as f:
+    with open('private_key.pem', 'wb') as f:
         f.write(decrypted_data)
 
-    print("Decrypted data saved to 'client_private_key.pem'")
+    print("Decrypted data saved to 'private_key.pem'")
     # Step 1: Load RSA private key
     private_key = load_private_key()
 
